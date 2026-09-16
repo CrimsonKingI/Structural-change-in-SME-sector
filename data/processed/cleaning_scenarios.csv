@@ -1,0 +1,3 @@
+scenario,label,months_dropped,n_before,n_after,closed_pct,closed_pct_ci,new_pct,new_pct_ci,K_pct,K_ratio,K_ratio_ci,K_includes_one
+exclude_compensation_patterns,"A: exclude compensation patterns (same-month + lagged), retain unresolved 2026-04","2024-07, 2025-07, 2026-02",7,14,276.31187197618164,"[41.9, 749.5]",9.761681861306748,"[-9.4, 34.8]",-70.77652422687648,0.2922347577312353,"[0.121, 0.863]",False
+exclude_all_flagged,B: exclude all four flagged months (headline cleaning),"2024-07, 2025-07, 2026-02, 2026-04",7,13,59.13372076379149,"[35.2, 86.2]",10.786929790178146,"[-9.5, 36.7]",-30.31401034414619,0.6968598965585381,"[0.524, 0.948]",False

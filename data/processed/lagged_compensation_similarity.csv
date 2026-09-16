@@ -1,0 +1,2 @@
+month,compensation_month,compensation_metric,region_cosine,region_spearman,okved_cosine,okved_spearman
+2026-02,2026-03,new_small,0.9995976981970303,0.9841454247853392,0.9992445466810614,0.9948361548632904

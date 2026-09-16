@@ -1,0 +1,6 @@
+threshold,n_flagged,flagged_months,anomaly_types,n_before,n_after,closed_pct,closed_pct_ci,K_ratio,K_ratio_ci,K_includes_one
+2.0,4,"2024-07, 2025-07, 2026-02, 2026-04","2024-07=churn, 2025-07=churn, 2026-02=lagged_compensation, 2026-04=provisional_net_exit",7,13,59.13372076379149,"[35.2, 86.2]",0.6968598965585381,"[0.524, 0.948]",False
+2.5,4,"2024-07, 2025-07, 2026-02, 2026-04","2024-07=churn, 2025-07=churn, 2026-02=lagged_compensation, 2026-04=provisional_net_exit",7,13,59.13372076379149,"[35.9, 85.8]",0.6968598965585381,"[0.528, 0.953]",False
+3.0,4,"2024-07, 2025-07, 2026-02, 2026-04","2024-07=churn, 2025-07=churn, 2026-02=lagged_compensation, 2026-04=provisional_net_exit",7,13,59.13372076379149,"[35.2, 86.2]",0.6968598965585381,"[0.524, 0.948]",False
+4.0,4,"2024-07, 2025-07, 2026-02, 2026-04","2024-07=churn, 2025-07=churn, 2026-02=lagged_compensation, 2026-04=provisional_net_exit",7,13,59.13372076379149,"[35.1, 85.2]",0.6968598965585381,"[0.527, 0.953]",False
+5.0,4,"2024-07, 2025-07, 2026-02, 2026-04","2024-07=churn, 2025-07=churn, 2026-02=lagged_compensation, 2026-04=provisional_net_exit",7,13,59.13372076379149,"[35.5, 86.8]",0.6968598965585381,"[0.525, 0.945]",False

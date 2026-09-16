@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
+__MACOSX/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Local LinkedIn material (not part of the repository)
+LinkedIn/
+
+# Obsidian / scratch
+.obsidian/
+2026-09-14.md

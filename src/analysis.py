@@ -28,7 +28,8 @@ Cleaning decisions:
     - active stock falls by roughly the closures, e.g. 2026-04). Aggregate
     data alone cannot distinguish an economic exit from an administrative
     registry operation (reclassification, category/OKVED/region change), so
-    provisional_net_exit is always a pattern label, not a verified exit; and
+    provisional_net_exit is always a register-level pattern label, not a
+    verified economic exit; and
     2026-04 raises an explicit warning because its t+1 month is outside the
     data window, so the lagged-compensation check cannot be run at all.
     Months that fit neither pattern are NOT dropped and raise a warning;
@@ -77,10 +78,12 @@ FIGURES_DIR = ROOT / "figures"
 # The raw register stores region "0" zfill(2)-ed as "00".
 EXCLUDED_REGIONS = {"00", "90", "93", "94", "95"}
 
-# A month is treated as an administrative artefact when its national
-# closed_small or closed_micro total exceeds the series median by more than
-# this multiple. Used by detect_anomalous_months() to replace the manual month
-# list of the Excel study (which knew only about the two Julys).
+# A month is treated as anomalous when its national closed_small OR closed_micro
+# total exceeds the series median by more than this multiple. Used by
+# detect_anomalous_months() to replace the manual month list of the Excel study
+# (which knew only about the two Julys). Both metrics are screened because
+# either flow can carry an unusually large closure wave; classification later
+# focuses on small enterprises, which is the population the study measures.
 MONTH_SPIKE_THRESHOLD = 3.0
 
 # Flow/stock reconciliation thresholds used by anomaly_diagnostics() to tell
@@ -138,7 +141,7 @@ def load_register(path: Path = RAW_CSV) -> pd.DataFrame:
 
 
 def detect_anomalous_months(df: pd.DataFrame, threshold: float = MONTH_SPIKE_THRESHOLD) -> list[str]:
-    """Detect calendar months with an administrative spike in the raw register.
+    """Detect calendar months with an unusually large closure flow in the raw register.
 
     The raw register stores one row per (month, region, OKVED). We sum each
     metric over the WHOLE register --- all regions, all classes, no months or
@@ -147,9 +150,13 @@ def detect_anomalous_months(df: pd.DataFrame, threshold: float = MONTH_SPIKE_THR
     national closed_micro total exceeds the respective series median by more
     than `threshold` times.
 
+    The detector screens both closed_small and closed_micro because either flow
+    can carry an unusually large closure wave; classification (anomaly_diagnostics)
+    then focuses on small enterprises, which is the population the study measures.
+
     This is the automatic rule that replaces the hardcoded month list of the
-    Excel study: the two Julys (annual register reclassification) and the
-    2026-02 / 2026-04 waves are all found by the same single rule.
+    Excel study: the two Julys and the 2026-02 / 2026-04 waves are all found by
+    the same single rule.
 
     Returns the sorted list of "YYYY-MM" strings to be logged/excluded.
     """
@@ -216,7 +223,8 @@ def anomaly_diagnostics(
                            the aggregate flows AND the *available* window: it
                            does not track individual firms, so an administrative
                            reclassification would also look like this in a single
-                           month. It is a pattern label, not a verified exit;
+                           month. It is a register-level pattern label, not a
+                           verified economic exit;
       * unclassified      neither pattern matches clearly -> the month is NOT
                            dropped automatically; a warning with the figures is
                            returned instead.

@@ -40,14 +40,17 @@ cells = [
         "`detect_anomalous_months` flags abnormal months by flow magnitude alone; "
         "`anomaly_diagnostics` reconciles flows with stocks (`new_small - closed_small` vs "
         "the observed change of `active_small`) and checks neighbouring registration waves, "
-        "to label the month as *churn* / *lagged_compensation* (register re-categorisation "
-        "or delayed compensation) or *provisional_net_exit* (an unresolved exit pattern). "
-        "Both July spikes are *churn*: an annual FNS methodology change re-maps enterprises "
-        "across size classes — a secondary/reference source puts the annual SME-register "
-        "review on 10 July (exclusion of non-qualifying enterprises, prior-year reporting "
-        "check, removal of previous-year registration marks), matching both spikes landing "
-        "on the same date two years running.\n\n"
-        "Two defensible cleaning scenarios result (data/processed/cleaning_scenarios.csv):\n\n"
+        "to label the month as *churn* / *lagged_compensation* (closures matched by same- or "
+        "next-month registrations — a pattern consistent with registry re-categorisation or a "
+        "delayed adjustment) or *provisional_net_exit* (an unresolved exit pattern; the "
+        "compensating flow is restricted to `new_small`, since the losses are small-enterprise "
+        "losses). Both July spikes are *churn*: new_small itself spikes ~8–11× its median and "
+        "the small-enterprise stock grows. The pattern is consistent with the documented "
+        "annual FNS register review — a secondary/reference source puts the annual "
+        "SME-register review on 10 July (exclusion of non-qualifying enterprises, prior-year "
+        "reporting check, removal of previous-year registration marks), matching both spikes "
+        "landing on the same date two years running.\n\n"
+        "Two alternative cleaning specifications result (data/processed/cleaning_scenarios.csv):\n\n"
         "- **`exclude_compensation_patterns`** — drop the Julys and 2026-02 "
         "(lagged-compensation), keep 2026-04: closures **+276.3%**;\n"
         "- **`exclude_all_flagged` (headline)** — drop all four flagged months: "
@@ -67,7 +70,8 @@ cells = [
         "### Block 1 — national before/after\n\n"
         "Mean monthly small-enterprise closures, new micro-enterprise registrations and the "
         "fragmentation coefficient `K = (new + 1) / (closed + 1)` (Laplace-smoothed, matching "
-        "the smoothed figure used in the Excel report, §4.4), with 95% bootstrap CIs.",
+        "the smoothed figure used in the Excel report, §4.4), with 95% percentile bootstrap "
+        "CIs from resampling calendar months within each period (7 before, 13 after).",
     ),
     ("code", "print(res['block1_table'][['metric', 'label', 'before', 'after', 'before_ci',\n"
              "                        'after_ci', 'diff', 'pct_change', 'pct_ci', 'diff_ci',\n"
@@ -79,7 +83,9 @@ cells = [
         "markdown",
         "### Block 2 — OKVED classes\n\n"
         "Top-15 classes ranked by `K_after` (Fragmentation coefficient in the after period), "
-        "same ranking as the Excel sheet `Блок_2`. Labels from the OKVED-2 classifier.",
+        "same ranking as the Excel sheet `Блок_2`. Labels from the OKVED-2 classifier. "
+        "*Note:* `K` can be unstable for classes with very low closure counts, so the ranking "
+        "should be interpreted jointly with the underlying closure and registration volumes.",
     ),
     ("code", "print(res['block2_top15'][['okved', 'okved_name', 'K_before', 'K_after',\n"
              "                        'K_after_ci', 'K_ratio', 'ratio_includes_one']]\n"
@@ -88,7 +94,9 @@ cells = [
         "markdown",
         "### Block 3 — regions\n\n"
         "Top-15 regions by small-enterprise closures (avg/month) in the after period, "
-        "with bootstrap CIs and the closure `% change`.",
+        "with bootstrap CIs and the closure `% change`. All 15 selected regions have 95% "
+        "bootstrap CIs for the before/after difference that exclude zero; these intervals are "
+        "descriptive because the regions were selected using observed after-period data.",
     ),
     ("code", "print(res['block3_top15'][['region_code', 'region', 'closed_small_avg_before',\n"
              "                        'closed_small_avg_after', 'closed_after_ci',\n"
@@ -116,9 +124,10 @@ cells = [
         "### Sensitivity (alternative cleaning definitions)\n\n"
         "The original study used a causal (DiD) design; that inference is **out of scope** here. "
         "Instead we stress the headline Block 1 statistic (closure `% change`) across cleaning "
-        "choices. The anomaly classification resolves the fork: the two Julys are churn "
-        "(register re-categorisation), 2026-02 is a lagged compensation pattern and 2026-04 "
-        "unresolved exit pattern. The headline (`exclude_all_flagged`, all four dropped) reads "
+        "choices. The anomaly classification describes the flag: the two Julys show a churn "
+        "pattern (closures matched by same-month registrations, consistent with the documented "
+        "annual FNS reclassification), 2026-02 is a lagged compensation pattern and 2026-04 "
+        "an unresolved exit pattern. The headline (`exclude_all_flagged`, all four dropped) reads "
         "+59.1%; `exclude_compensation_patterns`, which retains the unresolved 2026-04, reads "
         "+276.3% — the whole gap is that single month's treatment, which aggregate data cannot "
         "resolve.",

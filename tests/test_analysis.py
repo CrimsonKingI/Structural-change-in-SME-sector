@@ -291,3 +291,58 @@ def test_threshold_sensitivity():
     assert sens["closed_pct"].nunique() == 1
     assert sens["K_ratio"].nunique() == 1
     assert sens["K_ratio"].iloc[0] == pytest.approx(0.696860, rel=1e-3)
+
+
+def test_load_register_reports_bad_numeric_cells(tmp_path, capsys):
+    """A non-numeric cell must not pass silently as a valid number.
+
+    load_register() coerces the flow/stock columns with errors='coerce' (the
+    production behaviour is kept: a stray bad cell becomes NaN instead of
+    crashing groupby().sum() later), but it must surface the event as a
+    diagnostic warning naming the column and the affected months.
+    """
+    csv = tmp_path / "msp_bad.csv"
+    csv.write_text(
+        "month,region,okved,closed_small,closed_micro,new_small,new_micro,"
+        "active_small,active_micro\n"
+        "2024-05,77,01,10,100,10,900,1000,100000\n"
+        "2024-06,77,01,12,100,abc,900,1000,100000\n",
+        encoding="utf-8",
+    )
+    df = A.load_register(csv)
+    bad = df.loc[df["month"].eq(pd.Timestamp("2024-06-01")), "new_small"].iloc[0]
+    assert pd.isna(bad)
+    out = capsys.readouterr().out
+    assert "WARNING" in out and "new_small" in out and "2024-06" in out
+
+
+def test_lagged_compensation_ignores_new_micro():
+    """A small-enterprise stock loss may only be compensated by a new_small wave.
+
+    A t+1 new_micro spike that happens to match the small loss in magnitude must
+    NOT label the month lagged_compensation — new_micro is a different size class
+    and cannot compensate a small-enterprise loss. Without the population guard,
+    the t+1 new_micro wave (800 vs a loss of 800, ratio 1.0) would be accepted as
+    a compensation candidate.
+    """
+    d = lambda m: pd.Timestamp(m)
+    months = (1, 2, 3, 4, 5, 9, 10, 11, 12)          # 9 baseline months
+    rows = []
+    for mm in months:
+        for r in "AB":
+            rows.append([d(f"2023-{mm:02d}-01"), r, "01", 10, 10, 1000,
+                         100, 40, 10000])
+    # Flagged month: small closures jump (400 national), stock falls by 800.
+    for r in "AB":
+        rows.append([d("2023-06-01"), r, "01", 200, 10, 600, 100, 40, 10000])
+    # t+1: new_small normal, but new_micro spikes to 800 national (= the loss).
+    for r in "AB":
+        rows.append([d("2023-07-01"), r, "01", 10, 10, 600, 100, 400, 10000])
+    df = pd.DataFrame(rows, columns=["month", "region", "okved", "closed_small",
+                                     "new_small", "active_small", "closed_micro",
+                                     "new_micro", "active_micro"])
+
+    flagged = A.detect_anomalous_months(df)
+    assert flagged == ["2023-06"]
+    diag, _ = A.anomaly_diagnostics(df, flagged)
+    assert diag["anomaly_type"].tolist() == ["unclassified"]

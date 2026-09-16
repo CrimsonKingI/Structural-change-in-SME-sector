@@ -2,7 +2,7 @@
 
 A reproducible, evidence-first analysis of the **176,647-row** federal SME register (May 2024 – Apr 2026): do small-enterprise closures, new micro-firm registrations and the sector's fragmentation coefficient change across the 2025–2026 window relative to 2024?
 
-**Headline result.** In the cleaned register, mean monthly small-enterprise closures rose **384 → 611 (+59.1%)**, the fragmentation coefficient `K = (new micro + 1) / (closed small + 1)` **fell from 295 to 206 (−30.3%)**, ratio `K_after/K_before = 0.697` (95% bootstrap CI`[0.524, 0.948]`) — fewer new micro firms per closed small firm, driven by an acceleration of *exits* rather than a collapse of new registrations.
+**Headline result.** In the cleaned register, mean monthly small-enterprise closures rose **384 → 611 (+59.1%)**, the fragmentation coefficient `K = (new micro + 1) / (closed small + 1)` **fell from 295 to 206 (−30.3%)**, ratio `K_after/K_before = 0.697` (95% percentile bootstrap CI on calendar-month resamples `[0.524, 0.948]`). A lower K indicates fewer new micro-enterprise registrations relative to each small-enterprise closure; the change is driven primarily by the increase in closures while micro-registrations remain comparatively stable.
 
 ![Block 1 national trend](figures/fig1_national_trend.png)
 
@@ -25,7 +25,7 @@ Federal Tax Service SME-register statements, aggregated to **month × region × 
 ## Method
 
 1. **Cleaning.** Regions `00, 90, 93, 94, 95` (service row / incomplete data) are excluded. Anomalous months are found by the data itself, not a hand-picked list: a month is flagged when either national `closed_small` or `closed_micro` exceeds **3× its series median**.
-2. **Anomaly classification.** A flagged month is *not* blindly dropped — flows are reconciled with stocks (`new_small − closed_small` vs the observed change of `active_small`) and with neighbouring registration waves to label it `churn` / `lagged_compensation` (register re-categorisation; closures are matched by a same- or next-month registration wave, so the loss is not a permanent exit) or `provisional_net_exit` (uncompensated — stock falls ≈ closures, no matching registration wave). A secondary/reference source (not a primary normative act) points to the same calendar-day mechanism: the FNS runs an annual SME-register review on **10 July** — excluding enterprises that no longer meet the criteria, checking prior-year reporting, removing previous-year registration marks — which matches both July spikes landing on the same date two years running. 2026-04 is labelled `provisional_net_exit` *provisionally*, because its t+1 month is outside the data window, so the lagged-compensation rule cannot run for it; 2026-02, by contrast, shows a strong lagged compensation pattern (the 2026-03 `new_small` wave ≈ 93.4% of the February decline). The headline cleaning drops all four flagged months (+59.1%); the alternative scenario removes the compensation months (the two Julys and the lagged 2026-02) while retaining the unresolved 2026-04 and reads **+276.3%** (see `cleaning_scenarios.csv`).
+2. **Anomaly classification.** A flagged month is *not* blindly dropped — flows are reconciled with stocks (`new_small − closed_small` vs the observed change of `active_small`) and with neighbouring registration waves. What is **observed directly**: in the two Julys `new_small` itself spikes ~8–11× its median and the small-enterprise stock actually *grows* (labelled `churn` — closures matched by same-month registrations); in 2026-02 the stock falls and is matched one month later by a `new_small` wave ≈ 93.4% of the decline (labelled `lagged_compensation` — the compensating flow is restricted to `new_small`, since the loss is a small-enterprise loss); 2026-04 shows stock falling ≈ closures with no matching registration wave (labelled `provisional_net_exit` *provisionally* — its t+1 month is outside the data window, so the lagged-compensation rule cannot run for it). These labels describe observed flow/stock **patterns**, not verified mechanisms. The two **July spikes are consistent with** the documented annual FNS reclassification mechanism: a secondary/reference source (not a primary normative act) states the FNS runs an annual SME-register review on **10 July** — excluding enterprises that no longer meet the criteria, checking prior-year reporting, removing previous-year registration marks — which matches both spikes landing on the same date two years running. The headline cleaning drops all four flagged months (+59.1%); the alternative cleaning specification removes the two Julys and the lagged 2026-02 while retaining the unresolved 2026-04 and reads **+276.3%** (see `cleaning_scenarios.csv`).
 3. **Statistics.** Per period (7 vs 13 months), mean monthly `closed_small` and `new_micro`, plus the Laplace-smoothed fragmentation coefficient `K`.
 4. **Inference.** **5,000 bootstrap resamples** of calendar months *within* each period → 95% percentile confidence intervals for every statistic, the period difference, and `K_after/K_before` (resampling the sampled periods, not a parametric model).
 5. **Decomposition.** OKVED top-15 by after-period `K`; top-15 regions by closures;
@@ -46,6 +46,8 @@ Federal Tax Service SME-register statements, aggregated to **month × region × 
 | `K_after/K_before` | — | — | **0.697** `[0.524, 0.948]` |
 
 Point estimates are identical to the original Excel study for the `before` window; `after` deliberately supersedes it because the automatic rule also catches the two 2026 waves that the manual July-only rule missed.
+
+All confidence intervals above are 95% percentile bootstrap intervals from resampling calendar months within each period (7 before, 13 after).
 
 More figures: `fig2_block1` (CIs), `fig4_block3_regions` (top-15 regions),
 `fig5_matrix_heatmap` (region×OKVED), `fig6_robustness` (sensitivity).
@@ -78,6 +80,9 @@ figures/                   generated PNG figures
 ## Limitations
 
 - **Descriptive only** — pre/post comparison alone is not a causal design.
-- The headline depends on how flagged months are treated; the classification and the two scenarios (compensation-patterns-only vs all-flagged) are published so the choice is transparent.
+- The headline depends on how flagged months are treated; the classification and the two cleaning specifications (compensation-patterns-only vs all-flagged) are published so the choice is transparent.
+- The top-15 summaries in Blocks 2–3 are selected after observing the data; their CIs are descriptive (no multiplicity correction).
+- `K` can be unstable for categories with very low closure counts (notably in Block 2); rankings should be interpreted jointly with the underlying closure and registration volumes.
 - Asymmetric periods (7 vs 13 months), no seasonal adjustment.
 - Laplace `+1` smoothing on `K` is inherited from the source study.
+- Aggregate region × OKVED × category data cannot establish whether the same entities moved between categories/months. Full identification would require retaining and reconciling entity identifiers across monthly source files, which is outside the scope of this study.

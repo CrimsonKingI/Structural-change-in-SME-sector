@@ -148,8 +148,8 @@ def detect_anomalous_months(df: pd.DataFrame, threshold: float = MONTH_SPIKE_THR
     than `threshold` times.
 
     This is the automatic rule that replaces the hardcoded month list of the
-    Excel study: the two Julys (annual register clean-up) and the 2026-02 /
-    2026-04 waves are all found by the same single rule.
+    Excel study: the two Julys (annual register reclassification) and the
+    2026-02 / 2026-04 waves are all found by the same single rule.
 
     Returns the sorted list of "YYYY-MM" strings to be logged/excluded.
     """
@@ -173,9 +173,11 @@ def anomaly_diagnostics(
     The magnitude filter (detect_anomalous_months) only tells us that a month
     has an abnormal *flow*. The same signal can mean two very different things:
 
-      * compensation (churn) - the registry's category stock is reshuffled
-        (e.g. the annual July methodology change): closures are matched by
-        same-month registrations, so the active stock does not actually fall;
+      * compensation (churn) - closures are matched by same-month
+        registrations, so the active stock does not actually fall (as in the
+        two Julys, where new_small itself spikes). The pattern is consistent
+        with the documented annual July FNS register reclassification, but the
+        flow/stock evidence alone does not establish the mechanism;
       * provisional_net_exit - the flows match an uncompensated exit pattern:
         registrations stay normal and the active stock drops by (roughly) the
         number of closures. The label is deliberately provisional: aggregate
@@ -197,14 +199,17 @@ def anomaly_diagnostics(
                            or up);
       * lagged_compensation  same-month compensation is absent, but a
                            *neighbouring* month (t+1 first, t-1 as a defensive
-                           check) shows a registration spike close in magnitude
+                           check) shows a *new_small* spike close in magnitude
                            to the stock loss (within compensation_tolerance,
                            20%): the closures reappear one month later, so the
                            loss is not necessarily a permanent exit. 2026-02 is
                            matched by the 2026-03 new_small wave (4,907 vs a
                            -5,253 stock loss), which is consistent with a
                            delayed registry adjustment; the compensation
-                           month/metric/ratio are recorded;
+                           month/metric/ratio are recorded. The compensating
+                           flow is only new_small — new_micro is a different
+                           size class and cannot compensate a small-enterprise
+                           stock loss;
       * provisional_net_exit  new_small is NOT a spike AND
                            actual_delta_small ~= -closed_small
                            (within +/- net_exit_tolerance). The label reflects
@@ -296,14 +301,18 @@ def anomaly_diagnostics(
 
 def _find_lagged_compensation(loss: float, neighbors: dict, median,
                               new_spike_threshold: float, tolerance: float) -> dict | None:
-    """Look for a neighbouring registration spike that matches a stock loss.
+    """Look for a neighbouring new_small spike that matches a small stock loss.
 
     `loss` is the observed active_small decline of the flagged month (> 0).
     A neighbouring month (t+1 first, then t-1 as a defensive check) counts as a
-    lagged compensation when its new_small (or new_micro) is itself a spike
+    lagged compensation when its *new_small* is itself a spike
     (> new_spike_threshold x its median) AND its magnitude matches the loss
     within `tolerance` (20%), i.e. the closed volume reappears in the register
     around the same size.
+
+    The compensating flow is deliberately restricted to `new_small`: the loss
+    is a small-enterprise stock decline, and new_micro registrations belong to
+    a different size class / population, so they cannot compensate it.
 
     Returns a dict with compensation_month / compensation_metric /
     compensation_ratio, or None.
@@ -312,16 +321,11 @@ def _find_lagged_compensation(loss: float, neighbors: dict, median,
         if label not in neighbors:
             continue
         nm = neighbors[label]
-        candidates = []
         if median["new_small"] and nm["new_small"] > new_spike_threshold * median["new_small"]:
-            candidates.append(("new_small", nm["new_small"]))
-        if median["new_micro"] and nm["new_micro"] > new_spike_threshold * median["new_micro"]:
-            candidates.append(("new_micro", nm["new_micro"]))
-        for metric, value in candidates:
-            ratio = value / loss
+            ratio = nm["new_small"] / loss
             if (1 - tolerance) <= ratio <= (1 + tolerance):
                 return {"compensation_month": nm.name,
-                        "compensation_metric": metric,
+                        "compensation_metric": "new_small",
                         "compensation_ratio": float(ratio)}
     return None
 
@@ -940,10 +944,10 @@ def cleaning_scenarios(raw: pd.DataFrame, n_iter: int = 5000, seed: int = 42,
     net-exit pattern) in the sample.
 
     Scenario `exclude_all_flagged` drops every month that trips the magnitude
-    rule, as the base cleaning does. This is the more restrictive cleaning
-    scenario: it removes the compensation patterns together with any month whose
-    flows remain unresolved. Both published scenarios are therefore *sensitivity
-    / alternative cleaning scenarios*, not bounds.
+    rule, as the base cleaning does. This is the headline cleaning specification
+    used for reporting: it removes the compensation patterns together with any
+    month whose flows remain unresolved. Both published scenarios are therefore
+    *sensitivity / alternative cleaning specifications*, not bounds.
 
     Scenario `exclude_all_flagged` is the headline cleaning *by definition*, so
     when `headline_res` (the bootstrap result of the national Block 1 run) is

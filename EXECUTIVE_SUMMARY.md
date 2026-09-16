@@ -37,20 +37,23 @@ in the register, not policy effects.
 
   | month | closed_small | new_small (×median) | actual Δstock | classification |
   |---|---|---|---|---|
-  | 2024-07 | 7,625 | 1,364 (11.1×) | **+15,458** | **churn** — re-categorisation |
-  | 2025-07 | 8,343 | 1,024 (8.4×) | **+11,931** | **churn** — re-categorisation |
+  | 2024-07 | 7,625 | 1,364 (11.1×) | **+15,458** | **churn** — compensation pattern |
+  | 2025-07 | 8,343 | 1,024 (8.4×) | **+11,931** | **churn** — compensation pattern |
   | 2026-02 | 5,299 | 49 (0.40×) | **−5,253** | **lagged_compensation** — matched by 2026-03 |
   | 2026-04 | 12,346 | 51 (0.42×) | **−12,299** | **provisional_net_exit** — t+1 unavailable |
 
-  The two **Julys are a re-categorisation artefact** (an annual July methodology change in the
-  FNS average-headcount rule, which re-maps enterprises across size classes): closures are
-  compensated by same-month registrations/re-tags (`new_small` itself spikes ~8–11× median) and
-  the small-enterprise stock actually **grows**. A secondary/reference source supports the same
-  calendar-day mechanism: the FNS runs an annual review of the SME register on **10 July** —
-  excluding enterprises that no longer meet the criteria, checking prior-year reporting, and
-  removing previous-year registration marks — which aligns with both spikes landing on the
-  same date in two consecutive years. This is an external, reference-level explanation (not a
-  primary normative act); it reinforces, rather than replaces, the flow/stock evidence above.
+  The two **July spikes are consistent with a register re-categorisation**
+  (the observed pattern: closures are compensated by same-month registrations/
+  re-tags, `new_small` itself spikes ~8–11× median, and the small-enterprise
+  stock actually **grows**). This is an *interpretation* of the observed
+  flow/stock pattern, not a direct observation of the mechanism. A
+  secondary/reference source aligns with the same calendar-day mechanism: the
+  FNS runs an annual review of the SME register on **10 July** —
+  excluding enterprises that no longer meet the criteria, checking prior-year
+  reporting, and removing previous-year registration marks — which matches both
+  spikes landing on the same date in two consecutive years. This is an
+  external, reference-level explanation (not a primary normative act); it
+  reinforces, rather than replaces, the flow/stock evidence above.
   The two **2026 months are different**:
   registrations stay normal (~0.4× median) and the stock falls by almost exactly the number of
   closures (−5,253 ≈ −5,299; −12,299 ≈ −12,346). 2026-02, however, is matched one month later by
@@ -60,24 +63,28 @@ in the register, not policy effects.
   an economic exit from an administrative reclassification (the code does not track individual
   firms), and its t+1 month lies outside the data window, so the lagged-compensation rule cannot
   run for it.
-- **The cleaning fork, in two scenarios.** Because the same flag covers an artefact and exit
-  patterns, two defensible samples result (both computed and shipped in `cleaning_scenarios.csv`):
-  - **`exclude_all_flagged` — drop all four flagged months (headline/base, 7m / 13m).** The more
-    restrictive cleaning scenario: removes the two re-categorisation Julys, the lagged-compensation
-    2026-02 and the provisional-exit 2026-04. Closures **+59.1%** (CI `[35.2, 86.2]` — the headline Block-1
-    bootstrap, reused here), K_after/K_before = **0.697** (CI `[0.524, 0.948]`).
+- **The cleaning fork, in two alternative cleaning specifications.** Because the same flag
+  covers a compensation pattern and exit patterns, two specifications result (both computed and
+  shipped in `cleaning_scenarios.csv`):
+  - **`exclude_all_flagged` — drop all four flagged months (headline, 7m / 13m).** This is the
+    main/headline specification used for reporting, while the alternative cleaning
+    specification is retained as a sensitivity analysis. It removes the two July months, the
+    lagged-compensation 2026-02 and the provisional-exit 2026-04. Closures **+59.1%** (CI
+    `[35.2, 86.2]` — the headline Block-1 bootstrap, reused here), K_after/K_before = **0.697**
+    (CI `[0.524, 0.948]`).
   - **`exclude_compensation_patterns` — drop the compensation months only (7m / 14m).** The
     Julys and 2026-02 are removed; the *unresolved* 2026-04 month stays in the sample. Closures
     **+276.3%** (CI `[41.9, 749.5]`), K_ratio = **0.292** (CI `[0.121, 0.863]`). The point
     estimate is dominated by that single month, and the CI is correspondingly wide.
 - Periods (headline): **before = 7 months** (2024 minus 2024-07), **after = 13 months**
   (Jan 2025 – Apr 2026 minus 2025-07, 2026-02, 2026-04).
-- The fork is reported rather than hidden: the alternative sample differs from the headline only
-  in the treatment of 2026-02 and 2026-04. The +59.1% figure is not framed as a bound; it is the
-  reading under the more restrictive cleaning scenario (Scenario B, `exclude_all_flagged`). All
-  blocks below use the cleaned, reproducible base.
-- 5,000 bootstrap resamples of months within each period → 95% percentile confidence intervals
-  for each statistic, the period difference, and the ratio K_after/K_before.
+- The fork is reported rather than hidden: the alternative specification differs from the
+  headline only in the treatment of 2026-02 and 2026-04. The +59.1% figure is not framed as a
+  bound; it is the estimate under the all-flagged cleaning specification (Scenario B,
+  `exclude_all_flagged`). All blocks below use the cleaned, reproducible base.
+- 5,000 bootstrap resamples of months within each period → 95% percentile bootstrap confidence
+  intervals based on resampling calendar months, for each statistic, the period difference, and
+  the ratio K_after/K_before.
 - Causal design (DiD, region × quarter panel, 1-NOM / CBR data) is **explicitly out of scope**
   and replaced by a sensitivity table.
 
@@ -87,8 +94,10 @@ in the register, not policy effects.
    (**+59.1%**, CI `[35.2, 86.2]`, 0 not in CI). Micro-enterprise registrations were essentially
    flat (**+10.8%**, CI `[-9.5, 36.7]` — not significant[^1]). The fragmentation coefficient
    **fell from 295.4 to 205.8 (−30.3%, CI `[-47.6, -5.2]`)**; the ratio
-   K_after/K_before = **0.697** (CI `[0.524, 0.948]`, 1 not in CI) — fewer new micro firms per
-   closed small enterprise. *(The alternative `exclude_compensation_patterns` sample, which
+   K_after/K_before = **0.697** (CI `[0.524, 0.948]`, 1 not in CI) — a lower K indicates fewer
+   new micro-enterprise registrations relative to each small-enterprise closure; the change is
+   driven primarily by the increase in closures while micro-registrations remain comparatively
+   stable. *(The alternative `exclude_compensation_patterns` specification, which
    retains the unresolved 2026-04 month in the 'after' period, reads much higher — +276.3%;
    that signal is driven by a single month whose own classification is uncertain rather than by
    compensation waves, so it is reported as a fork alongside the headline, not as the headline.)*
@@ -96,11 +105,15 @@ in the register, not policy effects.
 2. **OKVED classes (Block 2).** Highest after-period fragmentation in Education (85, K=1,043),
    Land transport (49, 808), Other personal services (96, 757), Professional/scientific
    services (74, 690), Computer repair (95, 574). Under the cleaned periods **no** top-class
-   ratio CI excludes 1 — a weaker class-level picture than in the Excel report.
+   ratio CI excludes 1 — a weaker class-level picture than in the Excel report. *Note: K can be
+   unstable for classes with very low closure counts; the ranking should be read jointly with
+   the underlying closure and registration volumes.*
 
 3. **Regions (Block 3).** Moscow (122 closures/month, **+51.5%**), Saint Petersburg (57,
    +48.8%), Moscow Oblast (36, +57.2%), Sverdlovsk (22, +62.1%), Krasnodar Krai (21, +49.2%),
-   Novosibirsk (16, +64.8%). CIs exclude 0 for all top-15 regions.
+   Novosibirsk (16, +64.8%). All 15 selected regions have 95% bootstrap CIs for the
+   before/after difference that exclude zero. These intervals are descriptive because the
+   regions were selected using observed after-period data.
 
 4. **Region × OKVED matrix (Block 4).** Of 7,152 pairs, 4,734 (66%) have ≥3 active months in
    **both** periods and are evaluated; **61%** show fragmentation up, **38%** down, 0.5%
@@ -120,16 +133,18 @@ in the register, not policy effects.
 | After = 2025 only (7m / 11m) | +56.1% (−3.0) |
 | Re-add any excluded region | +59.1 … +59.5% (≈ 0) |
 
-The headline is **+59.1%** (Scenario B, the more restrictive cleaning), not the old report's
-**+341.9%** — and the anomaly classification now explains why the two readings differ. Flagged months split into **churn**
-(two Julys: register re-categorisation, stock actually grows), **lagged_compensation** (2026-02,
+The headline is **+59.1%** (Scenario B, the all-flagged cleaning specification), not the old
+report's **+341.9%** — and the anomaly classification now explains why the two readings differ.
+Flagged months split into **churn** (two Julys: compensation pattern — new_small spikes, stock
+actually grows), **lagged_compensation** (2026-02,
 matched by the 2026-03 new_small wave) and **provisional_net_exit** (2026-04, uncompensated and
 unresolvable within the data window). `exclude_compensation_patterns` keeps 2026-04 in the
 sample and reads **+276.3%**; `exclude_all_flagged` removes it and reads **+59.1%**. Every other
 variant that removes all detected anomalies — after-2025, threshold forks, region re-tests —
-clusters around **+56…+60%**. The robust reading: *once the register artefacts are removed,
-closures rose; the unresolved 2026-04 month, if counted as an exit, moves the answer from +59.1%
-to +276.3%, while the narrower threshold/treatment tests cluster at +56…+60%*. The difference
+clusters around **+56…+60%**. The robust reading: *once the flagged months are removed,
+closures rose; the unresolved 2026-04 month, if counted as an exit, moves the answer from
++59.1% to +276.3%, while the narrower threshold/treatment tests cluster at +56…+60%*. The
+difference The difference
 between the two scenarios is a single month's classification, and aggregate data cannot decide
 it — the fork is reported rather than resolved. K_after/K_before is **0.697** (headline) or
 **0.292** (2026-04 kept) accordingly.
@@ -178,15 +193,23 @@ sensitive to the threshold over the tested 2.0–5.0 range.
   scope and kept out of this repository. Tax receipts (1-NOM) and credit (CBR key-rate) data
   were deliberately not linked for the same reason.
 - **Anomalous months & the cleaning fork**: the automatic 3×-median rule flags four months;
-  flow/stock classification (`anomaly_diagnostics`) labels two as register re-categorisation
-  (churn Julys), 2026-02 as a lagged compensation pattern and 2026-04 as a provisional exit
-  pattern (its t+1 month is outside the data window). Both samples are legitimate depending on
-  how the rule is read, so the headline keeps the all-flagged cleaning (+59.1%), and the sample
-  retaining the unresolved 2026-04 month yields +276.3%; a single month's classification drives
-  the difference, and aggregate data cannot resolve it.
+  flow/stock classification (`anomaly_diagnostics`) labels two as churn (compensation pattern:
+  closures matched by same-month registrations), 2026-02 as a lagged compensation pattern and
+  2026-04 as a provisional exit pattern (its t+1 month is outside the data window). Both
+  cleaning specifications are legitimate depending on how the rule is read, so the headline
+  keeps the all-flagged cleaning (+59.1%), and the specification retaining the unresolved
+  2026-04 month yields +276.3%; a single month's classification drives the difference, and
+  aggregate data cannot resolve it.
 - **Laplace smoothing**: `+1` on `K` (per the Excel report's smoothed coefficient) shifts point
   estimates ~0.1–0.3% vs raw ratios.
+- **`K` instability for low-volume categories**: K can be unstable when closure counts are very
+  low (notably in the Block 2 class ranking); such rankings are descriptive and should be read
+  jointly with the underlying volumes.
 - **Asymmetric periods** (7 vs 13 months) and no seasonal adjustment.
+- **Aggregate, not entity-level**: region × OKVED × category data cannot establish whether the
+  same entities moved between categories/months. Full identification would require retaining
+  and reconciling entity identifiers across monthly source files, which is outside the scope
+  of this study.
 - Register structure and ETL are reproduced from the original files without re-verification
   against source registries.
 

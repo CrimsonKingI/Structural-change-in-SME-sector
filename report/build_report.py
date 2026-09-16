@@ -184,7 +184,7 @@ def build() -> None:
       "The project asks whether closures, new registrations and K shifted between the 2024 "
       "baseline and the 2025–2026 window. The surprising part is methodological: the answer "
       "turns out to depend on how the data are cleaned, and the cleaning hides two 2026 months "
-      "that look nothing like the July register artefacts. Figure 1 shows the raw monthly series "
+      "that the manual rule missed. Figure 1 shows the raw monthly series "
       "and the four months the cleaning rule removes.")
     image(doc, "fig1_national_trend.png", 6.4,
           "Figure 1 — raw national monthly series; circled points are the months excluded by "
@@ -232,11 +232,14 @@ def build() -> None:
       "A flagged month is not dropped blindly. anomaly_diagnostics() reconciles the flow with "
       "the stock for each month: the flow-implied change new_small − closed_small is compared "
       "with the observed change of active_small, and a neighbouring registration wave is "
-      "checked for a lagged match. The two Julys show churn — a register "
-      "recategorisation (the FNS July methodology change): new_small itself spikes "
+      "checked for a lagged match, restricted to new_small (a small-enterprise loss "
+      "cannot be compensated by new_micro registrations). The two Julys show a churn pattern — "
+      "closures matched by same-month registrations: new_small itself spikes "
       f"{jul24['new_small_x_median']:.1f}× and {jul25['new_small_x_median']:.1f}× the median "
-      "and the small-enterprise stock actually grows. A secondary/reference source (not a "
-      "primary normative act) points to the same calendar-day mechanism: the FNS runs an "
+      "and the small-enterprise stock actually grows. This churn reading is an interpretation "
+      "of the observed flow/stock pattern — it is consistent with, but not proof of, the "
+      "annual FNS register reclassification. A secondary/reference source (not a "
+      "primary normative act) aligns with the same calendar-day mechanism: the FNS runs an "
       "annual SME-register review on 10 July — excluding enterprises that no longer meet the "
       "criteria, checking prior-year reporting, removing previous-year registration marks — "
       "which matches both spikes landing on the same date in two consecutive years. "
@@ -253,16 +256,17 @@ def build() -> None:
            "anomaly_type": "Classification"},
           fmt={"closed_small": 0, "new_small": 0, "actual_delta_small": 0})
 
-    h(doc, 2, "2.5  The cleaning fork — two defensible samples")
+    h(doc, 2, "2.5  The cleaning fork — two alternative cleaning specifications")
     p(doc,
-      "Because the same flag covers an artefact (two Julys) and exit patterns (2026-02/04), "
-      "two samples are defensible, and the pipeline publishes both (data/processed/"
-      "cleaning_scenarios.csv):")
+      "Because the same flag covers a compensation pattern (the two Julys) and exit patterns "
+      "(2026-02/04), the two cleaning specifications below are published as the sensitivity "
+      "fork (data/processed/cleaning_scenarios.csv):")
     p(doc,
       "`exclude_compensation_patterns` drops the two churn Julys and the lagged-compensation "
       "2026-02 but keeps the unresolved 2026-04 month in the sample. "
       f"Closures read **{alt['closed_pct']:+.1f}%** (CI {alt['closed_pct_ci']}), "
-      f"K_after/K_before = {alt['K_ratio']:.3f}. `exclude_all_flagged` drops all four months; "
+      f"K_after/K_before = {alt['K_ratio']:.3f}. `exclude_all_flagged` (the headline "
+      "specification) drops all four months; "
       f"closures read **{head['closed_pct']:+.1f}%** (CI {head['closed_pct_ci']}), "
       f"K_after/K_before = {head['K_ratio']:.3f}. The difference between the two readings is "
       "exactly the treatment of 2026-04 — a single month whose own classification cannot be "
@@ -320,6 +324,9 @@ def build() -> None:
     h(doc, 1, "3.  Results by block")
     h(doc, 2, "3.1  Block 1 — national before/after")
     p(doc,
+      "All CIs below are 95% percentile bootstrap intervals from resampling calendar months "
+      "within each period (7 before, 13 after).")
+    p(doc,
       f"Mean monthly small-enterprise closures rose from {b1['point']['closed_small']['before']:,.1f} "
       f"to {b1['point']['closed_small']['after']:,.1f} — "
       f"**{_pct(b1['point']['closed_small']['pct_change'])}** (95% CI "
@@ -331,8 +338,9 @@ def build() -> None:
       f"({_pct(b1['point']['K']['pct_change'])}, CI {_ci(b1['bootstrap']['K']['pct_change'])}), "
       f"and the ratio K_after/K_before = "
       f"**{b1['ratio_K']['value']:.3f}** (CI {_ci(b1['ratio_K']['ci'], '{:.3f}')}; 1 not in CI). "
-      "Both effects point the same way: fewer new micro firms per closed small firm — an "
-      "acceleration of exits, not a slowdown of entry.")
+      "A lower K indicates fewer new micro-enterprise registrations relative to each "
+      "small-enterprise closure; the decline is driven primarily by the increase in closures "
+      "while micro-enterprise registrations remain comparatively stable.")
     p(doc,
       f"The K ratio uses the Laplace +1 inherited from the Excel study. The +1 is immaterial "
       f"to the finding: without it the raw coefficients are K_before = {kb_raw:,.1f}, "
@@ -348,9 +356,13 @@ def build() -> None:
       "Ranking the 88 OKVED-2 classes by after-period K, the most fragmented classes are "
       f"{names} (full top-15 in data/processed/block2_top15_okved.csv). Under the cleaned "
       "periods no top-class ratio CI excludes 1 — a weaker class-level picture than the Excel "
-      "report suggested, and a sign that the headline signal is national rather than sectoral.")
+      "report suggested, and a sign that the headline signal is national rather than sectoral. "
+      "Note that K can be unstable for classes with very low closure counts; the ranking "
+      "should be interpreted jointly with the underlying closure and registration volumes.")
     image(doc, "fig3_block2_okved.png", 6.4,
-          "Figure 3 — top-15 OKVED classes by after-period fragmentation coefficient.")
+          "Figure 3 — top-15 OKVED classes by after-period fragmentation coefficient (K is "
+          "unstable at very low closure volumes, so rank by K should be read with the "
+          "underlying counts).")
 
     h(doc, 2, "3.3  Block 3 — regions")
     top3 = d["b3"].sort_values("closed_small_avg_after", ascending=False).head(5)
@@ -359,15 +371,19 @@ def build() -> None:
     wings = " and ".join(f"{r['region']} (+{r['closed_pct_change']:.1f}%)"
                          for _, r in widest.iterrows())
     p(doc,
-      "After-period closures concentrate in the large agglomerations, and all top-15 regions "
-      f"show a rise with a CI excluding 0: {regs}. The widest relative swings within the "
-      f"top-15 are {wings}, consistent with a wave of exits rather than a Moscow-only effect.")
+      "After-period closures concentrate in the large agglomerations. All 15 selected regions "
+      f"have 95% bootstrap CIs for the before/after difference that exclude zero: {regs}. "
+      "These intervals are descriptive because the regions were selected using observed "
+      "after-period data. The widest relative swings within the top-15 are "
+      f"{wings}, consistent with the national rise in closures rather than a "
+      "Moscow-only effect.")
     p(doc,
       "As in Block 2, the top-15 are highlighted after observing the data; they are not a set "
-      "of pre-registered hypotheses, so the nominal CIs are read descriptively (no multiplicity "
-      "correction).")
+      "of pre-registered hypotheses, so the nominal percentile-bootstrap CIs are read "
+      "descriptively (no multiplicity correction).")
     image(doc, "fig4_block3_regions.png", 6.4,
-          "Figure 4 — top-15 regions by small-enterprise closures (after period).")
+          "Figure 4 — top-15 regions by small-enterprise closures (after period); CIs are "
+          "95% percentile bootstrap intervals on calendar-month resamples.")
 
     h(doc, 2, "3.4  Block 4 — region × OKVED matrix")
     b4 = d["block4"]
@@ -406,8 +422,9 @@ def build() -> None:
       f"detected anomalies (2025-only, re-added regions, threshold forks) clusters around "
       f"**+{lo_core}% to +{hi_core}%**. `exclude_compensation_patterns`, which keeps the "
       f"unresolved 2026-04 in the sample, reads **{alt['closed_pct']:+.1f}%** — the whole gap "
-      "between the two readings is that single month's treatment. The register artefact (July "
-      "re-categorisation) is not the story: once it is removed, closures rose; whether the "
+      "between the two readings is that single month's treatment. The two July months "
+      "(labelled churn) are not the story: once the flagged months are removed, closures rose; "
+      "whether the "
       f"unresolved 2026-04 month is counted or not moves the answer between "
       f"{head['closed_pct']:+.0f}% and {alt['closed_pct']:+.0f}%. The band is wide, but it is "
       "now defined by a reproducible rule and explained by the data, not a silent choice.")
@@ -434,6 +451,15 @@ def build() -> None:
       "K, asymmetric period lengths (7 vs 13 months) and the absence of seasonal adjustment. "
       "The register structure and ETL were reproduced from the original files without "
       "re-verification of the source statements themselves.")
+    p(doc,
+      "K can be unstable for categories with very low closure counts (notably the Block 2 "
+      "class ranking); rankings should be interpreted jointly with the underlying closure and "
+      "registration volumes.")
+    p(doc,
+      "The analysis uses aggregate region × OKVED × category data; it cannot establish whether "
+      "the same entities moved between categories or months. Full identification would require "
+      "retaining and reconciling entity identifiers across monthly source files, which is "
+      "outside the scope of this study.")
 
     # ---- 6. Conclusion ----
     h(doc, 1, "6.  Conclusion")

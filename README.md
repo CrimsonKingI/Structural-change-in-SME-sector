@@ -86,3 +86,4 @@ figures/                   generated PNG figures
 - Asymmetric periods (7 vs 13 months), no seasonal adjustment.
 - Laplace `+1` smoothing on `K` is inherited from the source study.
 - Aggregate region × OKVED × category data cannot establish whether the same entities moved between categories/months. Full identification would require retaining and reconciling entity identifiers across monthly source files, which is outside the scope of this study.
+- Claude (Anthropic) was used as an AI-assisted development and research support tool during the project. Its contribution included assistance with parts of the Python implementation, code review and debugging, discussion of alternative methodological approaches, and refinement of the research methodology and wording of methodological limitations. The final analytical design, interpretation of the results, methodological decisions, validation of outputs, and responsibility for the submitted work remain with the author.
